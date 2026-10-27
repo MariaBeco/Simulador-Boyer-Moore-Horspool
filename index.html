@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador Boyer-Moore-Horspool</title>
+
+  <!-- Tailwind CSS ya compilado (funciona sin internet).
+       Si agregas clases nuevas, regenéralo con:
+       npx tailwindcss@3 -i css/entrada.css -o css/tailwind.css --content "index.html,vista/*.js" --minify -->
+  <link rel="stylesheet" href="css/tailwind.css">
+  <style>
+    /* Tamaño de cada casilla de la animación (lo usa también vista.js) */
+    :root { --celda: 44px; }
+    .celda { width: 40px; height: 40px; }
+    .pista::-webkit-scrollbar { height: 8px; }
+    .pista::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen bg-red-50/40 text-neutral-800 antialiased">
+
+  <!-- Barra compacta: aparece al bajar, con el logo pequeño de la universidad -->
+  <div id="barraCompacta"
+    class="fixed inset-x-0 top-0 z-50 -translate-y-full opacity-0 border-b-4 border-red-600 bg-white/95 shadow-md backdrop-blur transition-all duration-300">
+    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
+      <img src="img/logo-ufps.png" alt="Universidad Francisco de Paula Santander" class="h-10 w-auto">
+      <span class="h-8 w-px bg-neutral-300"></span>
+      <p class="truncate font-semibold text-red-700">Simulador Boyer-Moore-Horspool</p>
+    </div>
+  </div>
+
+  <!-- Encabezado con el logo del programa -->
+  <header id="encabezado">
+    <div class="border-b border-neutral-200 bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <img src="img/logo-programa.png" alt="Programa de Ingeniería de Sistemas - Acreditado de Alta Calidad" class="h-16 w-auto sm:h-24">
+          <img src="img/logo-ufps.png" alt="Universidad Francisco de Paula Santander" class="hidden h-24 w-auto sm:block">
+        </div>
+      </div>
+    </div>
+    <div class="bg-gradient-to-r from-red-800 via-red-700 to-red-600 text-white">
+      <div class="mx-auto max-w-6xl px-4 py-8">
+        <p class="text-sm font-medium uppercase tracking-widest text-red-200">Simulador de búsqueda de cadenas</p>
+        <h1 class="mt-1 text-3xl font-bold sm:text-4xl">Boyer-Moore-Horspool</h1>
+        <p class="mt-2 max-w-2xl text-red-100">
+          Observa cómo el patrón se compara de derecha a izquierda y luego salta sobre el texto
+          usando la tabla de saltos.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[320px_1fr]">
+
+    <!-- Columna izquierda: entrada de datos y tabla de saltos -->
+    <aside class="space-y-6">
+
+      <!-- 1. Entrada de datos -->
+      <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+        <h2 class="text-lg font-semibold">Datos</h2>
+
+        <label for="texto" class="mt-4 block text-sm font-medium text-neutral-600">Texto</label>
+        <textarea id="texto" rows="4"
+          class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">ABRACADABRA</textarea>
+
+        <label for="patron" class="mt-4 block text-sm font-medium text-neutral-600">Patrón</label>
+        <input type="text" id="patron" value="ABRA"
+          class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
+
+        <button id="btnBuscar"
+          class="mt-4 w-full rounded-lg bg-red-600 px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-red-700 active:scale-[0.98]">
+          Buscar
+        </button>
+
+        <p id="mensajeError" class="mt-3 text-sm font-medium text-neutral-700 empty:hidden"></p>
+      </section>
+
+      <!-- 2. Tabla de saltos (la llena el controlador) -->
+      <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+        <h2 class="text-lg font-semibold">Tabla de saltos</h2>
+        <p class="mt-1 text-xs text-neutral-500">Se resalta la fila que se usa en cada salto.</p>
+        <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-neutral-200">
+          <table class="w-full text-center font-mono text-sm [&_td]:px-3 [&_td]:py-1.5 [&_tr]:border-t [&_tr]:border-neutral-100 [&_tr]:transition-colors">
+            <thead class="bg-neutral-50 font-sans text-xs uppercase tracking-wide text-neutral-500">
+              <tr>
+                <th class="px-3 py-2">Carácter</th>
+                <th class="px-3 py-2">Salto</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTabla"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. Resultado (lo llena el controlador) -->
+      <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+        <h2 class="text-lg font-semibold">Resultado</h2>
+        <p id="cantidad" class="mt-2 font-medium text-neutral-700"></p>
+        <p id="posiciones" class="mt-1 font-mono text-sm text-red-700"></p>
+      </section>
+    </aside>
+
+    <!-- Columna derecha: animación paso a paso -->
+    <section id="simulacion" class="hidden min-w-0 space-y-6">
+
+      <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold">Recorrido del patrón</h2>
+          <span id="contadorPaso" class="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-600"></span>
+        </div>
+
+        <!-- Pista: texto arriba, patrón abajo que se desplaza -->
+        <div id="pista" class="pista mt-4 overflow-x-auto px-1 pb-3">
+          <div id="lienzo" class="relative pt-12">
+            <div id="flechaSalto" class="pointer-events-none absolute top-1 h-8 rounded-t-2xl border-2 border-b-0 border-dashed border-red-500 opacity-0 transition-all duration-300">
+              <span id="etiquetaSalto" class="absolute -top-3 left-1/2 -tranneutral-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white"></span>
+            </div>
+            <div id="filaIndices" class="flex gap-1 font-mono text-[11px] text-neutral-400"></div>
+            <div id="filaTexto" class="mt-1 flex gap-1"></div>
+            <div id="filaPatron" class="mt-3 flex gap-1 transition-transform duration-500 ease-in-out"></div>
+          </div>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-100 ring-1 ring-red-300"></span>Ventana actual</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-600"></span>Coincide</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-neutral-800"></span>No coincide</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-300"></span>Carácter que decide el salto</span>
+          <span class="flex items-center gap-1.5"><span class="h-1 w-3 rounded bg-red-600"></span>Patrón encontrado</span>
+        </div>
+
+        <!-- Explicación del paso actual -->
+        <div id="explicacion" class="mt-5 rounded-xl border-l-4 border-red-500 bg-red-50 p-4 text-sm leading-relaxed text-neutral-700"></div>
+
+        <!-- Controles (iconos en SVG para que se vean igual en todos los sistemas) -->
+        <div class="mt-5 flex flex-wrap items-center gap-2">
+          <button id="btnReiniciar" title="Reiniciar"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 4h2v12H4zM16 4v12L7 10z"/></svg>Reiniciar</button>
+          <button id="btnAnterior" title="Paso anterior (←)"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14 4v12L5 10z"/></svg>Anterior</button>
+          <button id="btnReproducir" title="Reproducir / pausar (espacio)"
+            class="inline-flex min-w-[130px] items-center justify-center gap-1.5 rounded-lg border border-red-600 bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4v12l9-6z"/></svg>Reproducir</button>
+          <button id="btnSiguiente" title="Paso siguiente (→)"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white">Siguiente<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4v12l9-6z"/></svg></button>
+          <label class="ml-auto flex items-center gap-2 text-sm text-neutral-500">
+            Velocidad
+            <input id="velocidad" type="range" min="1" max="5" value="3" class="accent-red-600">
+          </label>
+        </div>
+      </div>
+
+      <!-- Estadísticas e historial de intentos -->
+      <div class="grid gap-6 md:grid-cols-[200px_1fr]">
+        <div class="grid grid-cols-3 gap-3 md:grid-cols-1">
+          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Alineaciones</p>
+            <p id="statIntentos" class="text-2xl font-bold text-red-600">0</p>
+          </div>
+          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Comparaciones</p>
+            <p id="statComparaciones" class="text-2xl font-bold text-red-600">0</p>
+          </div>
+          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Encontradas</p>
+            <p id="statEncontradas" class="text-2xl font-bold text-red-700">0</p>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+          <h3 class="font-semibold">Historial de saltos</h3>
+          <p class="text-xs text-neutral-500">Haz clic en un intento para ir a ese momento.</p>
+          <ol id="historial" class="mt-3 max-h-64 space-y-1 overflow-y-auto pr-1 text-sm"></ol>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Primero la lógica (modelo), después el controlador que la usa y al final la vista animada -->
+  <script src="modelo/BooyerMooreHorspool.js"></script>
+  <script src="controlador/app.js"></script>
+  <script src="vista/vista.js"></script>
+</body>
+</html>

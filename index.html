@@ -9,6 +9,7 @@
        Si agregas clases nuevas, regenéralo con:
        npx tailwindcss@3 -i css/entrada.css -o css/tailwind.css --content "index.html,vista/*.js" --minify -->
   <link rel="stylesheet" href="css/tailwind.css">
+  <link rel="stylesheet" href="css/simulador.css?v=5">
   <style>
     /* Tamaño de cada casilla de la animación (lo usa también vista.js) */
     :root { --celda: 44px; }
@@ -34,7 +35,7 @@
     <div class="border-b border-neutral-200 bg-white">
       <div class="mx-auto max-w-6xl px-4 py-4">
         <div class="flex items-center justify-between gap-4">
-          <img src="img/logo-programa.png" alt="Programa de Ingeniería de Sistemas - Acreditado de Alta Calidad" class="h-16 w-auto sm:h-24">
+          <img src="img/logo-programa.png" alt="Programa de Ingeniería de Sistemas - Acreditado de Alta Calidad" class="logo-programa">
           <img src="img/logo-ufps.png" alt="Universidad Francisco de Paula Santander" class="hidden h-24 w-auto sm:block">
         </div>
       </div>
@@ -43,15 +44,53 @@
       <div class="mx-auto max-w-6xl px-4 py-8">
         <p class="text-sm font-medium uppercase tracking-widest text-red-200">Simulador de búsqueda de cadenas</p>
         <h1 class="mt-1 text-3xl font-bold sm:text-4xl">Boyer-Moore-Horspool</h1>
-        <p class="mt-2 max-w-2xl text-red-100">
-          Observa cómo el patrón se compara de derecha a izquierda y luego salta sobre el texto
-          usando la tabla de saltos.
-        </p>
       </div>
     </div>
   </header>
 
   <main class="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[320px_1fr]">
+
+    <!-- Explicación del algoritmo -->
+    <section class="explicacion ancho-completo rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+      <h2 class="text-lg font-semibold">¿Cómo funciona Boyer-Moore-Horspool?</h2>
+      <p class="mt-1">
+        Busca todas las apariciones de un <b>patrón</b> <code>P</code> (de longitud <code>m</code>) dentro de un
+        <b>texto</b> <code>T</code> (de longitud <code>n</code>). Compara de derecha a izquierda y usa una
+        <b>tabla de saltos</b> <code>S</code> para avanzar varias posiciones cuando es posible.
+      </p>
+      <div class="explicacion-columnas">
+        <div>
+          <h3>1. Construir la tabla de saltos</h3>
+          <p>La tabla indica cuántas posiciones avanza el patrón según el carácter del texto que queda arriba de su última casilla.</p>
+          <ol>
+            <li>Se asigna a todos los caracteres el salto máximo, <code>m</code>. Este valor queda para los que no están en el patrón («Otros»).</li>
+            <li>Se recorre el patrón de izquierda a derecha, desde <code>j = 0</code> hasta <code>j = m - 2</code>. El último carácter no se incluye, porque su salto sería 0 y el patrón no avanzaría.</li>
+            <li>A cada carácter se le asigna su distancia hasta el final del patrón: <code>S[P[j]] = m - 1 - j</code></li>
+            <li>Si un carácter se repite, el valor nuevo reemplaza al anterior. Así queda el salto más corto, que evita saltarse una coincidencia.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>2. Buscar en el texto</h3>
+          <ol>
+            <li>Se alinea el patrón con el inicio del texto: <code>i = 0</code></li>
+            <li>Se compara de derecha a izquierda, desde <code>j = m - 1</code>, mientras <code>P[j] == T[i + j]</code></li>
+            <li>Si todos los caracteres coinciden (<code>j &lt; 0</code>), se guarda la posición <code>i</code>.</li>
+            <li>Haya coincidencia o no, se salta según el <b>carácter ancla</b>, que es el último de la ventana: <code>i = i + S[T[i + m - 1]]</code></li>
+            <li>Se repite desde el paso 2 mientras <code>i &lt;= n - m</code></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Resumen de la búsqueda (lo llena el controlador) -->
+    <section id="resumen" hidden aria-live="polite" class="resumen ancho-completo rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold">Resumen</h2>
+        <button id="btnPDF" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">Descargar PDF</button>
+      </div>
+      <p id="cantidad" class="mt-2 font-medium text-neutral-700"></p>
+      <p id="posiciones" class="mt-1 font-mono text-sm text-red-700"></p>
+    </section>
 
     <!-- Columna izquierda: entrada de datos y tabla de saltos -->
     <aside class="space-y-6">
@@ -60,12 +99,30 @@
       <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
         <h2 class="text-lg font-semibold">Datos</h2>
 
-        <label for="texto" class="mt-4 block text-sm font-medium text-neutral-600">Texto</label>
-        <textarea id="texto" rows="4"
-          class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">ABRACADABRA</textarea>
+        <fieldset class="mt-4">
+          <legend class="text-sm font-medium text-neutral-600">¿Cómo quieres ingresar el texto?</legend>
+          <div class="selector-entrada">
+            <label><input type="radio" name="modo" value="escribir" autocomplete="off" checked><span>Escribirlo</span></label>
+            <label><input type="radio" name="modo" value="archivo" autocomplete="off"><span>Subir .txt</span></label>
+          </div>
+        </fieldset>
+
+        <div id="panelEscribir" class="mt-3">
+          <label for="texto" class="block text-sm font-medium text-neutral-600">Texto</label>
+          <textarea id="texto" rows="6" autocomplete="off" spellcheck="false" placeholder="Escribe o pega el texto aquí"
+            class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"></textarea>
+          <p id="contadorTexto" class="text-xs text-neutral-500"></p>
+        </div>
+
+        <div id="panelArchivo" hidden class="mt-3">
+          <label for="archivo" class="block text-sm font-medium text-neutral-600">Archivo .txt</label>
+          <input type="file" id="archivo" autocomplete="off" accept=".txt,text/plain"
+            class="mt-1 w-full rounded-lg border border-neutral-300 p-2 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
+          <p id="infoArchivo" class="mt-1 text-xs text-neutral-500" aria-live="polite"></p>
+        </div>
 
         <label for="patron" class="mt-4 block text-sm font-medium text-neutral-600">Patrón</label>
-        <input type="text" id="patron" value="ABRA"
+        <input type="text" id="patron" autocomplete="off" spellcheck="false" placeholder="Escribe el patrón"
           class="mt-1 w-full rounded-lg border border-neutral-300 p-2 font-mono text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200">
 
         <button id="btnBuscar"
@@ -73,7 +130,7 @@
           Buscar
         </button>
 
-        <p id="mensajeError" class="mt-3 text-sm font-medium text-neutral-700 empty:hidden"></p>
+        <p id="mensajeError" role="alert" class="mt-3 text-sm font-medium text-red-700 empty:hidden"></p>
       </section>
 
       <!-- 2. Tabla de saltos (la llena el controlador) -->
@@ -92,14 +149,11 @@
           </table>
         </div>
       </section>
-
-      <!-- 3. Resultado (lo llena el controlador) -->
-      <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
-        <h2 class="text-lg font-semibold">Resultado</h2>
-        <p id="cantidad" class="mt-2 font-medium text-neutral-700"></p>
-        <p id="posiciones" class="mt-1 font-mono text-sm text-red-700"></p>
-      </section>
     </aside>
+
+    <section id="ayudaInicial" class="min-w-0 rounded-2xl bg-white p-5 text-neutral-500 shadow-sm ring-1 ring-neutral-200">
+      Escribe el texto o carga un archivo .txt, escribe el patrón y presiona <b>Buscar</b> para ver el recorrido.
+    </section>
 
     <!-- Columna derecha: animación paso a paso -->
     <section id="simulacion" class="hidden min-w-0 space-y-6">
@@ -114,7 +168,7 @@
         <div id="pista" class="pista mt-4 overflow-x-auto px-1 pb-3">
           <div id="lienzo" class="relative pt-12">
             <div id="flechaSalto" class="pointer-events-none absolute top-1 h-8 rounded-t-2xl border-2 border-b-0 border-dashed border-red-500 opacity-0 transition-all duration-300">
-              <span id="etiquetaSalto" class="absolute -top-3 left-1/2 -tranneutral-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white"></span>
+              <span id="etiquetaSalto" class="absolute -top-3 left-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white"></span>
             </div>
             <div id="filaIndices" class="flex gap-1 font-mono text-[11px] text-neutral-400"></div>
             <div id="filaTexto" class="mt-1 flex gap-1"></div>
@@ -125,14 +179,11 @@
         <!-- Leyenda -->
         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
           <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-100 ring-1 ring-red-300"></span>Ventana actual</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-600"></span>Coincide</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-neutral-800"></span>No coincide</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-300"></span>Carácter que decide el salto</span>
-          <span class="flex items-center gap-1.5"><span class="h-1 w-3 rounded bg-red-600"></span>Patrón encontrado</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded muestra-ok"></span>Coincide</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded muestra-no"></span>No coincide</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded muestra-ancla"></span>Carácter ancla (decide el salto)</span>
+          <span class="flex items-center gap-1.5"><span class="h-1 w-3 rounded muestra-encontrada"></span>Patrón encontrado</span>
         </div>
-
-        <!-- Explicación del paso actual -->
-        <div id="explicacion" class="mt-5 rounded-xl border-l-4 border-red-500 bg-red-50 p-4 text-sm leading-relaxed text-neutral-700"></div>
 
         <!-- Controles (iconos en SVG para que se vean igual en todos los sistemas) -->
         <div class="mt-5 flex flex-wrap items-center gap-2">
@@ -144,42 +195,67 @@
             class="inline-flex min-w-[130px] items-center justify-center gap-1.5 rounded-lg border border-red-600 bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4v12l9-6z"/></svg>Reproducir</button>
           <button id="btnSiguiente" title="Paso siguiente (→)"
             class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white">Siguiente<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4v12l9-6z"/></svg></button>
-          <label class="ml-auto flex items-center gap-2 text-sm text-neutral-500">
-            Velocidad
-            <input id="velocidad" type="range" min="1" max="5" value="3" class="accent-red-600">
-          </label>
         </div>
       </div>
 
-      <!-- Estadísticas e historial de intentos -->
-      <div class="grid gap-6 md:grid-cols-[200px_1fr]">
-        <div class="grid grid-cols-3 gap-3 md:grid-cols-1">
-          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
-            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Alineaciones</p>
-            <p id="statIntentos" class="text-2xl font-bold text-red-600">0</p>
-          </div>
-          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
-            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Comparaciones</p>
-            <p id="statComparaciones" class="text-2xl font-bold text-red-600">0</p>
-          </div>
-          <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
-            <p class="truncate text-[10px] uppercase tracking-wide text-neutral-500 sm:text-xs">Encontradas</p>
-            <p id="statEncontradas" class="text-2xl font-bold text-red-700">0</p>
-          </div>
-        </div>
-
+      <!-- Tabla de trazas -->
+      <div class="space-y-6">
         <div class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
-          <h3 class="font-semibold">Historial de saltos</h3>
-          <p class="text-xs text-neutral-500">Haz clic en un intento para ir a ese momento.</p>
-          <ol id="historial" class="mt-3 max-h-64 space-y-1 overflow-y-auto pr-1 text-sm"></ol>
+          <h2 class="text-lg font-semibold">Tabla de trazas</h2>
+          <p class="text-xs text-neutral-500">Haz clic en un intento para verlo en el recorrido.</p>
+          <div id="contenedorTrazas" class="mt-3">
+            <table class="tabla-trazas">
+              <thead>
+                <tr><th>Intento</th><th>Ventana</th><th>Carácter ancla</th><th>i = actual + salto</th><th>Estado</th></tr>
+              </thead>
+              <tbody id="cuerpoTrazas"></tbody>
+            </table>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+            <button id="trazasAntes" class="boton-pagina">Anteriores</button>
+            <button id="trazasDespues" class="boton-pagina">Siguientes</button>
+            <span id="paginaTrazas"></span>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Primero la lógica (modelo), después el controlador que la usa y al final la vista animada -->
+  <footer class="pie">
+    <div class="pie-columnas mx-auto max-w-6xl px-4 py-6 text-sm text-neutral-600">
+      <div>
+        <p class="font-semibold text-red-700">Integrantes</p>
+        <ul id="listaAutores" class="mt-1 space-y-1"></ul>
+      </div>
+      <div>
+        <p class="font-semibold text-red-700">Materia</p>
+        <p class="mt-1">Análisis de Algoritmos</p>
+        <p class="mt-2 font-semibold text-red-700">Profesor</p>
+        <p class="mt-1">PhD. Marco Antonio Adarme Jaimes</p>
+      </div>
+      <div>
+        <p class="font-semibold text-red-700">Universidad Francisco de Paula Santander</p>
+        <p class="mt-1">Ingeniería de Sistemas</p>
+        <p class="mt-1">Cúcuta, Norte de Santander, Colombia</p>
+        <p class="mt-1">Segundo semestre - 2026</p>
+      </div>
+    </div>
+    <div class="pie-repo">
+      <a class="boton-repo" href="https://github.com/MariaBeco/Simulador-Boyer-Moore-Horspool.git" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>
+        Ver repositorio en GitHub
+      </a>
+    </div>
+  </footer>
+
+  <!-- Modelo, vistas y controlador; se comunican con el evento "busqueda" -->
+  <script src="lib/jspdf.umd.min.js"></script>
   <script src="modelo/BooyerMooreHorspool.js"></script>
-  <script src="controlador/app.js"></script>
-  <script src="vista/vista.js"></script>
+  <script src="modelo/trazas.js?v=5"></script>
+  <script src="vista/trazas.js?v=5"></script>
+  <script src="vista/vista.js?v=5"></script>
+  <script src="vista/pdf.js?v=5"></script>
+  <script src="vista/pie.js?v=5"></script>
+  <script src="controlador/app.js?v=5"></script>
 </body>
 </html>

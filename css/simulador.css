@@ -1,0 +1,74 @@
+/* Estilos propios del simulador (no necesitan compilarse con Tailwind) */
+[hidden] { display: none !important; }
+
+/* Casillas de la animación */
+.casilla-ok { background: #15803d; color: #fff; }
+.casilla-no { background: #dc2626; color: #fff; }
+.casilla-ancla { outline: 4px solid #fbbf24; transform: translateY(-4px); }
+.casilla-activa { transform: translateY(-4px) scale(1.1); }
+.casilla-encontrada { border-bottom: 4px solid #86efac; }
+.muestra-ok { background: #15803d; }
+.muestra-no { background: #dc2626; }
+.muestra-ancla { background: #fbbf24; }
+.muestra-encontrada { background: #86efac; }
+html { background: #fff; }
+#flechaSalto { top: 14px; height: 30px; }
+#etiquetaSalto { transform: translateX(-50%); }
+
+/* Logo del programa: recorta el margen blanco de la imagen */
+.logo-programa { width: 280px; max-width: 100%; height: 64px; object-fit: cover; margin-left: -16px; }
+@media (min-width: 640px) { .logo-programa { width: 430px; height: 96px; margin-left: -25px; } }
+
+/* Selector del tipo de entrada */
+.selector-entrada { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; padding: 4px; border-radius: 10px; background: #f5f5f5; }
+.selector-entrada label { position: relative; cursor: pointer; }
+.selector-entrada input { position: absolute; opacity: 0; }
+.selector-entrada span { display: block; padding: 8px; border-radius: 8px; text-align: center; font-size: 0.875rem; font-weight: 600; color: #525252; }
+.selector-entrada input:checked + span { background: #dc2626; color: #fff; }
+.selector-entrada input:focus-visible + span { outline: 2px solid #dc2626; outline-offset: 2px; }
+
+/* Entrada de archivo */
+#archivo::file-selector-button {
+  margin-right: 8px; border: 0; border-radius: 6px; padding: 6px 10px;
+  background: #fee2e2; color: #b91c1c; font-weight: 600; cursor: pointer;
+}
+#texto { display: block; resize: vertical; }
+.contador-excedido { color: #b91c1c; font-weight: 600; }
+
+/* Explicación del algoritmo */
+.explicacion { border-left: 6px solid #dc2626; font-size: 0.875rem; line-height: 1.6; }
+.explicacion-columnas { display: grid; gap: 1rem 2rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); margin-top: 1rem; }
+.explicacion h3 { font-weight: 600; color: #b91c1c; }
+.explicacion ol { list-style: decimal; padding-left: 1.25rem; margin-top: 0.5rem; }
+.explicacion li { margin-top: 0.25rem; }
+.explicacion code { color: #b91c1c; background: #fef2f2; border-radius: 4px; padding: 1px 4px; font-size: 0.8125rem; white-space: nowrap; }
+
+
+/* Resumen */
+.ancho-completo { grid-column: 1 / -1; min-width: 0; }
+.resumen { border-left: 6px solid #15803d; }
+#cantidad, #posiciones { overflow-wrap: anywhere; }
+#posiciones { max-height: 7rem; overflow-y: auto; }
+
+/* Tabla de trazas */
+#contenedorTrazas { position: relative; max-height: 24rem; overflow: auto; }
+.tabla-trazas { width: 100%; min-width: 520px; border-collapse: collapse; text-align: center; font-size: 0.8125rem; }
+.tabla-trazas th { position: sticky; top: 0; background: #fafafa; padding: 10px 8px; color: #525252; font-size: 0.75rem; }
+.tabla-trazas td { padding: 6px 8px; border-top: 1px solid #f0f0f0; white-space: nowrap; font-family: ui-monospace, Consolas, monospace; }
+.traza-ok { color: #15803d; font-weight: 600; white-space: nowrap; }
+.traza-no { color: #b91c1c; font-weight: 600; white-space: nowrap; }
+.traza-clic { cursor: pointer; }
+.traza-clic:hover { background: #f5f5f5; }
+.tabla-trazas .traza-activa { background: #fef3c7; }
+.boton-pagina { border: 1px solid #fecaca; border-radius: 8px; padding: 4px 12px; color: #b91c1c; }
+.boton-pagina:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Pie de página */
+.pie { border-top: 4px solid #dc2626; background: #fff; margin-top: 2rem; }
+.pie-columnas { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.pie .enlace-autor { color: #b91c1c; text-decoration: underline; }
+.pie a:hover { color: #b91c1c; text-decoration: underline; }
+.pie-repo { display: flex; justify-content: center; max-width: 72rem; margin: 0 auto; padding: 1rem; border-top: 1px solid #e5e5e5; }
+.pie .boton-repo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 0.875rem; font-weight: 600; }
+.pie .boton-repo:hover { background: #b91c1c; color: #fff; text-decoration: none; }
+.boton-repo svg { width: 18px; height: 18px; }
